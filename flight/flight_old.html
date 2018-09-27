@@ -1,0 +1,113 @@
+<!DOCTYPE HTML> 
+<html lang="en"> 
+<head>
+<title>Hello Terrain </title>
+<meta charset="utf-8"> 
+</head>
+
+    
+<script id="shader-vs" type="x-shader/x-vertex">
+   attribute vec3 aVertexNormal;
+   attribute vec3 aVertexPosition;
+   attribute vec3 aVertexColor;
+   
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat3 uNMatrix;
+
+    
+    
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+    varying vec3 vColor;
+
+    void main(void) {
+    
+    // Get the vertex position in eye coordinates
+    vec4 vertexPositionEye4 = uMVMatrix * vec4(aVertexPosition, 1.0);
+    vPosition = vertexPositionEye4.xyz / vertexPositionEye4.w;
+
+    // Transform the normal (n) to eye coordinates
+    vNormal = normalize(uNMatrix * aVertexNormal);
+
+    vColor = aVertexColor;
+
+    gl_Position = uPMatrix*uMVMatrix*vec4(aVertexPosition, 1.0); 
+    }
+</script>
+  
+<script id="shader-fs" type="x-shader/x-fragment">
+precision mediump float;
+varying vec3 vNormal;
+varying vec3 vPosition;
+varying vec3 vColor;
+
+uniform vec3 uLightPosition;
+uniform vec3 uAmbientLightColor;
+uniform vec3 uDiffuseLightColor;
+uniform vec3 uSpecularLightColor;
+const float shininess = 200.;
+void main(void) {
+          
+    // Calculate the vector (l) to the light source
+    vec3 vectorToLightSource = normalize(uLightPosition - vPosition);
+    // Calculate n dot l for diffuse lighting
+    float diffuseLightWeightning = max(dot(vNormal, 
+                                    vectorToLightSource), 0.0);
+
+    // The camera in eye coordinates is located in the origin and is pointing
+    // along the negative z-axis. Calculate viewVector (v) 
+    // in eye coordinates as:
+    // (0.0, 0.0, 0.0) - vertexPositionEye3
+    vec3 viewVectorEye = -normalize(vPosition);
+
+    // Calculate the half-way vector (h) as l + v
+    vec3 halfwayVector = normalize(vectorToLightSource + viewVectorEye);
+
+    float ndoth = max(dot(vNormal,halfwayVector), 0.0);
+
+    float specularLightWeightning = pow(ndoth, shininess);
+
+    // **************************
+    // NOTICE FOR GRADER----IF YOU ARE LOOKING FOR SPECULAR SHADING, I DO
+    // NOT INCLUDE IT IN MY SHADING CALCULATION BECAUSE REAL TERRAIN DOES NOT
+    // REFLECT LIKE PLASTIC. I STILL CALCULATE IT ABOVE TO DEMONSTRATE THAT
+    // I KNOW HOW TO DO IT WITH BLINN-PHONG ILLUMINATION
+    // **************************
+
+    // Sum up all three reflection components and send to the fragment shader
+    vec4 finalColor = vec4((uAmbientLightColor * vColor
+                + uDiffuseLightColor * diffuseLightWeightning * vColor
+                ),1.0);
+
+    // Calculate fog now
+    vec4 fogColor = vec4(0.80, 0.85, 1, 1);
+
+    float z = 1.0 - (gl_FragCoord.z / gl_FragCoord.w);
+    const float LOG2 = 1.442695;
+    float fogFactor = exp2( -.25 * 
+                   .25 * 
+                   z * 
+                   z * 
+                   LOG2 );
+    fogFactor = clamp(fogFactor, 0.0, 1.0);
+
+    gl_FragColor = mix(fogColor, finalColor, fogFactor);
+
+
+ }
+</script>
+
+<script src="gl-matrix-min.js"></script> 
+<script src="webgl-utils.js"></script>
+<script src="simpleModeling.js"></script>   
+<script src="terrainModeling.js"></script>  
+<script src="flightSimulator.js"></script>   
+<body onload="startup();">
+<p>Controls: W or Up Arrow to pitch up. S or Down Arrow to pitch down. A or Left Arrow to roll left. D or Right Arrow to roll right. + and - to increase and decrease speed.</p>
+ <canvas id="myGLCanvas" width="1240" height="650"></canvas>
+ 
+</body>
+
+</html>

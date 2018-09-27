@@ -3,9 +3,7 @@
     "",
     "\\css",
     "\\img",
-    "\\js",
-    "\\vendor\\font-awesome",
-    "\\vendor\\font-awesome\\css"
+    "\\js"
   ],
   "SelectedNode": "\\post.html",
   "PreviewInSolutionExplorer": false
